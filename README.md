@@ -1,10 +1,10 @@
 # AreaCalculate
 
-This project is for the architect to prickly check the value of architecture area size. 
+This project is for the architect to check the value of architecture area size quickly. 
 
 ## Installation
 
-Before running the project, you need to use the package manager [pip](https://pip.pypa.io/en/stable/) to install openpyxl and ezdxf.
+Before running the project, you must use the package manager [pip](https://pip.pypa.io/en/stable/) to install openpyxl and ezdxf.
 
 ```bash
 pip install openpyxl
