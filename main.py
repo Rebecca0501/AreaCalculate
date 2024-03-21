@@ -103,43 +103,8 @@ def getFloorName(msp, LayerName:str, FloorDataSheet):
                 FloorDataSheet[idx].name = text_py
                 break
 
-
-if __name__=="__main__":
-
-    #Step1. Get CAD file path
-    #input_file_path = input("请输入CAD文件的路径：")
-    str_CAD_file_name="example.dxf"
-    pathInputFilePath=pathlib.Path(os.getcwd())
-    pathInputFilePath=pathInputFilePath.joinpath(str_CAD_file_name)
-    input_file_path = str(pathInputFilePath)
-    #print(input_file_path)
-
-
-    #Step2. Open CAD file and model space
-    doc = ezdxf.readfile(input_file_path)
-    msp = doc.modelspace()
-
-
-    #Step3. Create new layers
-    # "Area" for rectangle, the color is yellow
-    #doc.layers.add(name="Area", color=2)
-    # "Dimension" for Dimension line, the color is magenta
-    #doc.layers.add(name="Dimension", color=6)
-    # "Vertical" for vertical line, the color is green
-    #doc.layers.add(name="Vertical", color=3)
-    # "PointNumber" for PointNumber label, the color is white
-    #doc.layers.add(name="PointNumber")
-
-    #Step4. create floor data sheet record imformation of select area
-    FloorDataSheet = []
-    
-    getFloorBorder(msp, "SelectArea", FloorDataSheet)
-
-    getFloorName(msp, "floor_name", FloorDataSheet)
-    
-
-    #Step5. calculate each function area
-    for LWPOLYLINE in msp.query("LWPOLYLINE[layer=='{}']".format("41-樓地板面積")):
+def getArea(msp, LayerName:str, FloorDataSheet, attribute_name):
+    for LWPOLYLINE in msp.query("LWPOLYLINE[layer=='{}']".format(LayerName)):
         points = point_list(LWPOLYLINE.get_points()).result()
         IntPointNum = len(points)
         for idx, f in enumerate(FloorDataSheet):
@@ -147,215 +112,10 @@ if __name__=="__main__":
                 #****************Be careful unit conversion**********
                 sum_detA = abs(detA_sum(IntPointNum,points).result())*0.0001
                 #****************Be careful unit conversion**********
-                FloorDataSheet[idx].area_floor += sum_detA
+                setattr(FloorDataSheet[idx], attribute_name, getattr(FloorDataSheet[idx], attribute_name) + sum_detA)
                 break
 
-    for LWPOLYLINE in msp.query("LWPOLYLINE[layer=='{}']".format("42-梯廳面積")):
-        
-        points = point_list(LWPOLYLINE.get_points()).result()
-        IntPointNum = len(points)
-        for idx, f in enumerate(FloorDataSheet):
-            if f.x_min < points[0].x and points[0].x < f.x_max and f.y_min < points[0].y and points[0].y < f.y_max:
-                #****************Be careful unit conversion**********
-                sum_detA = abs(detA_sum(IntPointNum,points).result())*0.0001
-                #****************Be careful unit conversion**********
-                FloorDataSheet[idx].area_hall += sum_detA
-                break
-    
-    for LWPOLYLINE in msp.query("LWPOLYLINE[layer=='{}']".format("43-管委會面積")):
-        
-        points = point_list(LWPOLYLINE.get_points()).result()
-        IntPointNum = len(points)
-        for idx, f in enumerate(FloorDataSheet):
-            if f.x_min < points[0].x and points[0].x < f.x_max and f.y_min < points[0].y and points[0].y < f.y_max:
-                #****************Be careful unit conversion**********
-                sum_detA = abs(detA_sum(IntPointNum,points).result())*0.0001
-                #****************Be careful unit conversion**********
-                FloorDataSheet[idx].area_committee += sum_detA
-                break
-
-    for LWPOLYLINE in msp.query("LWPOLYLINE[layer=='{}']".format("44-機電面積")):
-        points = point_list(LWPOLYLINE.get_points()).result()
-        IntPointNum = len(points)
-        for idx, f in enumerate(FloorDataSheet):
-            if f.x_min < points[0].x and points[0].x < f.x_max and f.y_min < points[0].y and points[0].y < f.y_max:
-                #****************Be careful unit conversion**********
-                sum_detA = abs(detA_sum(IntPointNum,points).result())*0.0001
-                #****************Be careful unit conversion**********
-                FloorDataSheet[idx].area_electromechanical += sum_detA
-                break
-
-    for LWPOLYLINE in msp.query("LWPOLYLINE[layer=='{}']".format("45-車道面積")):
-        points = point_list(LWPOLYLINE.get_points()).result()
-        IntPointNum = len(points)
-        for idx, f in enumerate(FloorDataSheet):
-            if f.x_min < points[0].x and points[0].x < f.x_max and f.y_min < points[0].y and points[0].y < f.y_max:
-                #****************Be careful unit conversion**********
-                sum_detA = abs(detA_sum(IntPointNum,points).result())*0.0001
-                #****************Be careful unit conversion**********
-                FloorDataSheet[idx].area_carramp += sum_detA
-                break
-
-    for LWPOLYLINE in msp.query("LWPOLYLINE[layer=='{}']".format("46-陽台面積")):
-        points = point_list(LWPOLYLINE.get_points()).result()
-        IntPointNum = len(points)
-        for idx, f in enumerate(FloorDataSheet):
-            if f.x_min < points[0].x and points[0].x < f.x_max and f.y_min < points[0].y and points[0].y < f.y_max:
-                #****************Be careful unit conversion**********
-                sum_detA = abs(detA_sum(IntPointNum,points).result())*0.0001
-                #****************Be careful unit conversion**********
-                FloorDataSheet[idx].area_balcony += sum_detA
-                break
-
-    for idx, f in enumerate(FloorDataSheet):
-
-        f.area_floorRemoveCar = f.area_floor - f.area_carramp
-
-        f.over_hall =  max(f.area_hall - (f.area_floorRemoveCar*0.1),0)
-
-        f.over_balcony =  max(f.area_balcony - (f.area_floorRemoveCar*0.1),0)
-
-        f.over_hallBalcony = max(f.area_hall + f.area_balcony - ((f.area_floorRemoveCar)*0.15) - f.over_hall - f.over_balcony,0)
-
-        f.area_volumn = f.area_floor-f.area_hall-f.area_committee-f.area_electromechanical-f.area_carramp + f.over_hall + f.over_balcony + f.over_hallBalcony
-
-        if f.area_floor >0:
-            msp.add_text(
-                f"樓地板面積: {round(f.area_floor,2)}",
-                height=f.font_size,
-            ).set_placement((f.write_point.x, f.write_point.y), align=TextEntityAlignment.LEFT)
-            f.write_point.y -= (f.font_size*3)
-
-        if f.area_carramp >0.:
-            msp.add_text(
-                f"室內停車&車道面積: {round(f.area_carramp,2)}",
-                height=f.font_size,
-            ).set_placement((f.write_point.x, f.write_point.y), align=TextEntityAlignment.LEFT)
-            f.write_point.y -= (f.font_size*3)
-            msp.add_text(
-                f"扣除室內停車面積之樓地板面積:",
-                height=f.font_size,
-            ).set_placement((f.write_point.x, f.write_point.y), align=TextEntityAlignment.LEFT)
-            f.write_point.y -= (f.font_size*1.5)
-            msp.add_text(
-                f"= {round(f.area_floor,2)}(樓地板面積) - {round(f.area_carramp,2)}(車道面積) = {round(f.area_floorRemoveCar,2)}",
-                height=f.font_size,
-            ).set_placement((f.write_point.x, f.write_point.y), align=TextEntityAlignment.LEFT)
-            f.write_point.y -= (f.font_size*3)
-
-        if f.area_hall >0.:
-            msp.add_text(
-                f"梯廳面積: {round(f.area_hall,2)}",
-                height=f.font_size,
-            ).set_placement((f.write_point.x, f.write_point.y), align=TextEntityAlignment.LEFT)
-            f.write_point.y -= (f.font_size*1.5)
-            if f.over_hall<0.001:
-                msp.add_text(
-                    f"{round(f.area_hall,2)} < {round(f.area_floorRemoveCar,2)}*0.1 = {round(f.area_floorRemoveCar*0.1,2)}...OK",
-                    height=f.font_size,
-                ).set_placement((f.write_point.x, f.write_point.y), align=TextEntityAlignment.LEFT)
-            else:
-                msp.add_text(
-                    f"{round(f.area_hall,2)} > {round(f.area_floorRemoveCar,2)}*0.1 = {round(f.area_floorRemoveCar*0.1,2)}",
-                    height=f.font_size,
-                ).set_placement((f.write_point.x, f.write_point.y), align=TextEntityAlignment.LEFT)
-                f.write_point.y -= (f.font_size*1.5)
-                msp.add_text(
-                    f"{round(f.area_hall,2)} - {round(f.area_floorRemoveCar*0.1,2)} = {round(f.over_hall,2)}...計入容積",
-                    height=f.font_size,
-                ).set_placement((f.write_point.x, f.write_point.y), align=TextEntityAlignment.LEFT)
-            f.write_point.y -= (f.font_size*3)
-
-        if f.area_committee >0.:
-            msp.add_text(
-                f"管委會面積: {round(f.area_committee,2)}",
-                height=f.font_size,
-            ).set_placement((f.write_point.x, f.write_point.y), align=TextEntityAlignment.LEFT)
-            f.write_point.y -= (f.font_size*3)
-
-        if f.area_electromechanical >0.:
-            msp.add_text(
-                f"機電面積: {round(f.area_electromechanical,2)}",
-                height=f.font_size,
-            ).set_placement((f.write_point.x, f.write_point.y), align=TextEntityAlignment.LEFT)
-            f.write_point.y -= (f.font_size*3)
-
-        if f.area_balcony >0.:
-            msp.add_text(
-                f"陽台面積: {round(f.area_balcony,2)}",
-                height=f.font_size,
-            ).set_placement((f.write_point.x, f.write_point.y), align=TextEntityAlignment.LEFT)
-            f.write_point.y -= (f.font_size*1.5)
-            if f.over_balcony<0.001:
-                msp.add_text(
-                    f"{round(f.area_balcony,2)} < {round(f.area_floorRemoveCar,2)}*0.1 = {round(f.area_floorRemoveCar*0.1,2)}...OK",
-                    height=f.font_size,
-                ).set_placement((f.write_point.x, f.write_point.y), align=TextEntityAlignment.LEFT)
-            else:
-                msp.add_text(
-                    f"{round(f.area_balcony,2)} > {round(f.area_floorRemoveCar,2)}*0.1 = {round(f.area_floorRemoveCar*0.1,2)}",
-                    height=f.font_size,
-                ).set_placement((f.write_point.x, f.write_point.y), align=TextEntityAlignment.LEFT)
-                f.write_point.y -= (f.font_size*1.5)
-                msp.add_text(
-                    f"{round(f.area_balcony,2)} - {round(f.area_floorRemoveCar*0.1,2)} = {round(f.over_balcony,2)}...計入容積",
-                    height=f.font_size,
-                ).set_placement((f.write_point.x, f.write_point.y), align=TextEntityAlignment.LEFT)
-            f.write_point.y -= (f.font_size*3)
-
-        msp.add_text(
-            f"梯廳+陽台面積檢討",
-            height=f.font_size,
-        ).set_placement((f.write_point.x, f.write_point.y), align=TextEntityAlignment.LEFT)
-        f.write_point.y -= (f.font_size*1.5)
-        msp.add_text(
-            f"{round(f.area_hall,2)}+{round(f.area_balcony,2)}={round(f.area_hall,2)+round(f.area_balcony,2)}",
-            height=f.font_size,
-        ).set_placement((f.write_point.x, f.write_point.y), align=TextEntityAlignment.LEFT)
-        f.write_point.y -= (f.font_size*1.5)
-        if (f.area_hall + f.area_balcony) < (f.area_floorRemoveCar)*0.15:
-            msp.add_text(
-                f"{round(f.area_hall,2)+round(f.area_balcony,2)} < {round(f.area_floorRemoveCar,2)}*0.15= {round(f.area_floorRemoveCar*0.15,2)} ...OK",
-                height=f.font_size,
-            ).set_placement((f.write_point.x, f.write_point.y), align=TextEntityAlignment.LEFT)
-        else:
-            msp.add_text(
-                f"{round(f.area_hall,2)+round(f.area_balcony,2)} > {round(f.area_floorRemoveCar,2)}*0.15= {round(f.area_floorRemoveCar*0.15,2)}",
-                height=f.font_size,
-            ).set_placement((f.write_point.x, f.write_point.y), align=TextEntityAlignment.LEFT)
-            f.write_point.y -= (f.font_size*1.5)
-            msp.add_text(
-                f"{round(f.area_hall,2)+round(f.area_balcony,2)} - {round(f.area_floorRemoveCar*0.15,2)} - {round(f.over_hall,2)}(10%梯廳超出) - {round(f.over_balcony,2)}(10%陽台超出) = {round(f.over_hallBalcony,2)}...計入容積",
-                height=f.font_size,
-            ).set_placement((f.write_point.x, f.write_point.y), align=TextEntityAlignment.LEFT)
-        f.write_point.y -= (f.font_size*3)
-
-        msp.add_text(
-            f"容積樓地板面積",
-            height=f.font_size,
-        ).set_placement((f.write_point.x, f.write_point.y), align=TextEntityAlignment.LEFT)
-        f.write_point.y -= (f.font_size*1.5)
-        msp.add_text(
-            f"= {round(f.area_floor,2)}(樓地板面積) - {round(f.area_hall,2)}(梯廳面積) - {round(f.area_committee,2)}(管委會面積) - {round(f.area_electromechanical,2)}(機電面積) - {round(f.area_carramp,2)}(車道面積) + {round(f.over_hall,2)}(10%梯廳超出) + {round(f.over_balcony,2)}(10%陽台超出) + {round(f.over_hallBalcony,2)}(15%梯廳陽台超出)",
-            height=f.font_size,
-        ).set_placement((f.write_point.x, f.write_point.y), align=TextEntityAlignment.LEFT)
-        f.write_point.y -= (f.font_size*1.5)
-        msp.add_text(
-            f"= {round(f.area_volumn,2)}",
-            height=f.font_size,
-        ).set_placement((f.write_point.x, f.write_point.y), align=TextEntityAlignment.LEFT)
-        f.write_point.y -= (f.font_size*3)
-
-
-
-
-    #Step5. Save processed file
-    file_name_parts = input_file_path.split('.')
-    output_file_path0 = file_name_parts[0] + "_after.dxf"
-    doc.saveas(output_file_path0)
-
-
-    #Step6. Save value in excel file
+def createExcel(FloorDataSheet, ExcelFileName: str):
     wb = openpyxl.Workbook()
     s1 = wb.active 
 
@@ -431,6 +191,136 @@ if __name__=="__main__":
     for idx, f in enumerate(FloorDataSheet):
         cell = str(f"K{idx+2}")
         s1[cell].value = FloorDataSheet[idx].area_volumn
-        
 
-    wb.save('面積計算表.xlsx')
+    ExcelFileName = ExcelFileName + ".xlsx"  
+    wb.save(ExcelFileName)
+
+def addTextLine(msp, FloorInfo, Content: str, line:int):
+    msp.add_text(
+        Content,
+        height=FloorInfo.font_size,
+    ).set_placement((FloorInfo.write_point.x, FloorInfo.write_point.y), align=TextEntityAlignment.LEFT)
+    FloorInfo.write_point.y -= (FloorInfo.font_size*1.5*line)
+
+def createCalculateFormula(FloorDataSheet):
+    for idx, FloorInfo in enumerate(FloorDataSheet):
+
+        FloorInfo.area_floorRemoveCar = FloorInfo.area_floor - FloorInfo.area_carramp
+
+        FloorInfo.over_hall =  max(FloorInfo.area_hall - (FloorInfo.area_floorRemoveCar*0.1),0)
+
+        FloorInfo.over_balcony =  max(FloorInfo.area_balcony - (FloorInfo.area_floorRemoveCar*0.1),0)
+
+        FloorInfo.over_hallBalcony = max(FloorInfo.area_hall + FloorInfo.area_balcony - ((FloorInfo.area_floorRemoveCar)*0.15) - FloorInfo.over_hall - FloorInfo.over_balcony,0)
+
+        FloorInfo.area_volumn = FloorInfo.area_floor-FloorInfo.area_hall-FloorInfo.area_committee-FloorInfo.area_electromechanical-FloorInfo.area_carramp + FloorInfo.over_hall + FloorInfo.over_balcony + FloorInfo.over_hallBalcony
+
+        if FloorInfo.area_floor >0:
+            content = str(f"樓地板面積: {round(FloorInfo.area_floor,2)}")
+            addTextLine(msp, FloorInfo, content, 2)
+
+        if FloorInfo.area_carramp >0.:
+            content = str(f"室內停車&車道面積: {round(FloorInfo.area_carramp,2)}")
+            addTextLine(msp, FloorInfo, content, 2)
+
+            content = str("扣除室內停車面積之樓地板面積:")
+            addTextLine(msp, FloorInfo, content, 1)
+            
+            content = str(f"= {round(FloorInfo.area_floor,2)}(樓地板面積) - {round(FloorInfo.area_carramp,2)}(車道面積) = {round(FloorInfo.area_floorRemoveCar,2)}")
+            addTextLine(msp, FloorInfo, content, 2)
+
+        if FloorInfo.area_hall >0.:
+            content = str(f"梯廳面積: {round(FloorInfo.area_hall,2)}")
+            addTextLine(msp, FloorInfo, content, 1)
+
+            if FloorInfo.over_hall<0.001:
+                content = str(f"{round(FloorInfo.area_hall,2)} < {round(FloorInfo.area_floorRemoveCar,2)}*0.1 = {round(FloorInfo.area_floorRemoveCar*0.1,2)}...OK")
+                addTextLine(msp, FloorInfo, content, 2)
+            else:
+                content = str(f"{round(FloorInfo.area_hall,2)} > {round(FloorInfo.area_floorRemoveCar,2)}*0.1 = {round(FloorInfo.area_floorRemoveCar*0.1,2)}")
+                addTextLine(msp, FloorInfo, content, 1)
+
+                content = str(f"{round(FloorInfo.area_hall,2)} - {round(FloorInfo.area_floorRemoveCar*0.1,2)} = {round(FloorInfo.over_hall,2)}...計入容積")
+                addTextLine(msp, FloorInfo, content, 2)
+
+        if FloorInfo.area_committee >0.:
+            content = str(f"管委會面積: {round(FloorInfo.area_committee,2)}")
+            addTextLine(msp, FloorInfo, content, 2)
+
+        if FloorInfo.area_electromechanical >0.:
+            content = str(f"機電面積: {round(FloorInfo.area_electromechanical,2)}")
+            addTextLine(msp, FloorInfo, content, 2)
+
+        if FloorInfo.area_balcony >0.:
+            content = str(f"陽台面積: {round(FloorInfo.area_balcony,2)}")
+            addTextLine(msp, FloorInfo, content, 1)
+            
+            if FloorInfo.over_balcony<0.001:
+                content = str(f"{round(FloorInfo.area_balcony,2)} < {round(FloorInfo.area_floorRemoveCar,2)}*0.1 = {round(FloorInfo.area_floorRemoveCar*0.1,2)}...OK")
+                addTextLine(msp, FloorInfo, content, 2)
+                
+            else:
+                content = str(f"{round(FloorInfo.area_balcony,2)} > {round(FloorInfo.area_floorRemoveCar,2)}*0.1 = {round(FloorInfo.area_floorRemoveCar*0.1,2)}")
+                addTextLine(msp, FloorInfo, content, 1)
+                
+                content = str(f"{round(FloorInfo.area_balcony,2)} - {round(FloorInfo.area_floorRemoveCar*0.1,2)} = {round(FloorInfo.over_balcony,2)}...計入容積")
+                addTextLine(msp, FloorInfo, content, 2)
+
+        content = str("梯廳+陽台面積檢討")
+        addTextLine(msp, FloorInfo, content, 1)
+
+        content = str(f"{round(FloorInfo.area_hall,2)}+{round(FloorInfo.area_balcony,2)}={round(FloorInfo.area_hall,2)+round(FloorInfo.area_balcony,2)}")
+        addTextLine(msp, FloorInfo, content, 1)
+        
+        if (FloorInfo.area_hall + FloorInfo.area_balcony) < (FloorInfo.area_floorRemoveCar)*0.15:
+            content = str(f"{round(FloorInfo.area_hall,2)+round(FloorInfo.area_balcony,2)} < {round(FloorInfo.area_floorRemoveCar,2)}*0.15= {round(FloorInfo.area_floorRemoveCar*0.15,2)} ...OK")
+            addTextLine(msp, FloorInfo, content, 2)
+        else:
+            content = str(f"{round(FloorInfo.area_hall,2)+round(FloorInfo.area_balcony,2)} > {round(FloorInfo.area_floorRemoveCar,2)}*0.15= {round(FloorInfo.area_floorRemoveCar*0.15,2)}")
+            addTextLine(msp, FloorInfo, content, 1)
+
+            content = str(f"{round(FloorInfo.area_hall,2)+round(FloorInfo.area_balcony,2)} - {round(FloorInfo.area_floorRemoveCar*0.15,2)} - {round(FloorInfo.over_hall,2)}(10%梯廳超出) - {round(FloorInfo.over_balcony,2)}(10%陽台超出) = {round(FloorInfo.over_hallBalcony,2)}...計入容積")
+            addTextLine(msp, FloorInfo, content, 2)
+
+        content = str("容積樓地板面積")
+        addTextLine(msp, FloorInfo, content, 1)
+
+        content = str(f"= {round(FloorInfo.area_floor,2)}(樓地板面積) - {round(FloorInfo.area_hall,2)}(梯廳面積) - {round(FloorInfo.area_committee,2)}(管委會面積) - {round(FloorInfo.area_electromechanical,2)}(機電面積) - {round(FloorInfo.area_carramp,2)}(車道面積) + {round(FloorInfo.over_hall,2)}(10%梯廳超出) + {round(FloorInfo.over_balcony,2)}(10%陽台超出) + {round(FloorInfo.over_hallBalcony,2)}(15%梯廳陽台超出)")
+        addTextLine(msp, FloorInfo, content, 1)
+
+        content = str(f"= {round(FloorInfo.area_volumn,2)}")
+        addTextLine(msp, FloorInfo, content, 1)
+
+if __name__=="__main__":
+
+    #Step1. Get CAD file path
+    str_CAD_file_name="example.dxf"
+    pathInputFilePath=pathlib.Path(os.getcwd())
+    pathInputFilePath=pathInputFilePath.joinpath(str_CAD_file_name)
+    input_file_path = str(pathInputFilePath)
+
+    #Step2. Open CAD file and model space
+    doc = ezdxf.readfile(input_file_path)
+    msp = doc.modelspace()
+
+    #Step3. create floor data sheet record imformation of select area
+    FloorDataSheet = []
+    getFloorBorder(msp, "SelectArea", FloorDataSheet)
+    getFloorName(msp, "floor_name", FloorDataSheet)
+    getArea(msp, "41-樓地板面積", FloorDataSheet, "area_floor")
+    getArea(msp, "42-梯廳面積", FloorDataSheet, "area_hall")
+    getArea(msp, "43-管委會面積", FloorDataSheet, "area_committee")
+    getArea(msp, "44-機電面積", FloorDataSheet, "area_electromechanical")
+    getArea(msp, "45-車道面積", FloorDataSheet, "area_carramp")
+    getArea(msp, "46-陽台面積", FloorDataSheet, "area_balcony")
+
+    #Step4. Add floor information on the new dxf file. 
+    createCalculateFormula(FloorDataSheet)
+
+    #Step5. Save processed file
+    file_name_parts = input_file_path.split('.')
+    output_file_path0 = file_name_parts[0] + "-after.dxf"
+    doc.saveas(output_file_path0)
+
+    #Step6. Save value in excel file
+    createExcel(FloorDataSheet, "面積計算表")

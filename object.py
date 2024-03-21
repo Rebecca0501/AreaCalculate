@@ -30,6 +30,11 @@ class CLine():
         if x >0 and y==0:
             return True
 
+# p2---------p1
+#  |         |
+#  |         |
+#  |         |
+# p3---------p4
 class CSqure():
     def __init__(self, line1:CLine, line2:CLine):
         self.l1=line1
@@ -67,8 +72,6 @@ class CSqure():
         return y_max
 
 
-
-
 class CPointVector():
     def __init__(self, p0=CPoint(0,0), p1=CPoint(1,1)):
         self.vx = p1.x-p0.x
@@ -78,12 +81,11 @@ class CPointVector():
         return f"Vector: [{self.vx}, {self.vy}]"
 
 
+# if __name__=="__main__":
+#     pointA=CPoint(2.72,3.85)
+#     pointB=CPoint(6.05,4.12)
+#     pointC= pointA.add(pointB)
+#     print(pointC)
 
-if __name__=="__main__":
-    pointA=CPoint(2.72,3.85)
-    pointB=CPoint(6.05,4.12)
-    pointC= pointA.add(pointB)
-    print(pointC)
-
-    vector1 = CPointVector(pointA,pointB)
-    print(vector1)
+#     vector1 = CPointVector(pointA,pointB)
+#     print(vector1)
