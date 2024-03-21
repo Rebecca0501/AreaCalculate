@@ -1,3 +1,5 @@
+import numpy as np
+
 class CPoint():
     def __init__(self, x:float, y:float):
         self.x=x
@@ -80,12 +82,58 @@ class CPointVector():
     def __str__(self):
         return f"Vector: [{self.vx}, {self.vy}]"
 
+class point_list():
+    def __init__(self, LWP_point):
+        self.LWP_point = LWP_point
+    
+    def result(self):
+        points = []
+        for inx, p in enumerate(self.LWP_point):
+            points.append(CPoint(p[0],p[1]))
+        return points
 
-# if __name__=="__main__":
-#     pointA=CPoint(2.72,3.85)
-#     pointB=CPoint(6.05,4.12)
-#     pointC= pointA.add(pointB)
-#     print(pointC)
+class floor_imformation():
+    def __init__(self, x_min:float, x_max:float, y_min:float, y_max:float):
+        self.x_min = x_min
+        self.x_max = x_max
+        self.y_min = y_min
+        self.y_max = y_max
+        self.write_line = 0
+        self.font_size = abs(y_max-y_min)/50
+        self.write_point = CPoint(self.x_max,self.y_max)
 
-#     vector1 = CPointVector(pointA,pointB)
-#     print(vector1)
+        self.area_floor = 0.00
+        self.area_floorRemoveCar = 0.00
+        self.area_hall = 0.00
+        self.area_committee = 0.00
+        self.area_electromechanical = 0.00
+        self.area_carramp = 0.00
+        self.area_balcony = 0.00
+        self.area_volumn = 0.00
+
+        self.over_hall =  0.00
+        self.over_balcony =  0.00
+        self.over_hallBalcony =  0.00
+
+        self.name = "new floor"
+
+
+class detA_sum():
+    def __init__(self, point_num:int, point):
+        self.point_num = point_num
+        self.point = point
+    
+    def result(self):
+        origin_vector = []
+        sum_detA = 0.000
+        for i in range(self.point_num):
+            vector_i = CPointVector(self.point[i],self.point[0])
+            origin_vector.append(vector_i)
+
+        for i in range(len(origin_vector)-1):
+            matrix = [[origin_vector[i].vx,origin_vector[i].vy],
+                      [origin_vector[i+1].vx,origin_vector[i+1].vy]]
+            #print(f"Matrix {i+1} = {matrix}")
+            s= np.linalg.det(matrix)*0.5
+            sum_detA += s
+        return sum_detA
