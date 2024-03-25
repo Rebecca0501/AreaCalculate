@@ -39,14 +39,29 @@ def getFloorName(msp, LayerName:str, FloorDataSheet):
 def getArea(msp, LayerName:str, FloorDataSheet, attribute_name):
     for LWPOLYLINE in msp.query("LWPOLYLINE[layer=='{}']".format(LayerName)):
         points = point_list(LWPOLYLINE.get_points()).result()
+        sumOfArea = 0.00
         IntPointNum = len(points)
         for idx, f in enumerate(FloorDataSheet):
             if f.x_min < points[0].x and points[0].x < f.x_max and f.y_min < points[0].y and points[0].y < f.y_max:
                 #****************Be careful unit conversion**********
                 sum_detA = abs(detA_sum(IntPointNum,points).result())*0.0001
                 #****************Be careful unit conversion**********
-                setattr(FloorDataSheet[idx], attribute_name, getattr(FloorDataSheet[idx], attribute_name) + sum_detA)
+                sumOfArea += sum_detA
                 break
+        match attribute_name:
+            case "area_floor":
+                FloorDataSheet[idx].area_floor = sumOfArea
+            case "area_hall":
+                FloorDataSheet[idx].area_hall = sumOfArea
+            case "area_committee":
+                FloorDataSheet[idx].area_committee = sumOfArea
+            case "area_electromechanical":
+                FloorDataSheet[idx].area_electromechanical = sumOfArea
+            case "area_carramp":
+                FloorDataSheet[idx].area_carramp = sumOfArea
+            case "area_balcony":
+                FloorDataSheet[idx].area_balcony = sumOfArea
+
 
 
 def addTextLine(msp, FloorInfo, Content: str, line:int):
