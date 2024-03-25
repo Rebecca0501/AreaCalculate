@@ -30,7 +30,8 @@ pip install ezdxf
 ## Usage
 
 在Step1. Get CAD file path區域修改代碼以找到需要處理的CAD檔
-注意：程式只能處裡副檔名為dxf的檔案
+> [!NOTE]
+> 程式只能處裡副檔名為dxf的檔案
 ```python
 #Step1. Get CAD file path
 str_CAD_file_name="example.dxf"
